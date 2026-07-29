@@ -75,7 +75,10 @@ const ITEMS = {"lantern":{"n":"ホシのランタン","i":"🏮"},"k1":{"n":"鐘
 const CHNAMES = {1:"\u7b2c\u4e00\u7ae0\u3000\u307e\u3061\u3068\u591c\u884c\u5217\u8eca",2:"\u7b2c\u4e8c\u7ae0\u3000\u3057\u305a\u304b\u306e\u8c37",3:"\u7b2c\u4e09\u7ae0\u3000\u9418\u306e\u5c71"};
 const CP = [1,201,401];
 const BADGES = [["TRUE","TRUE END"],["GOOD","GOOD END"],["END","END"],["BAD","BAD END"],["SILENT","\u3057\u305a\u304bEND"],["OMAKE","\u304a\u307e\u3051"]];
-const SAVEKEY="yoru2w_save1", FOUNDKEY="yoru2w_found";
+const SAVEKEY="yoru2w_save1", FOUNDKEY="yoru2w_found", CLEARKEY="yoru2w_clear";
+function clears(){ try{ return JSON.parse(localStorage.getItem(CLEARKEY)||"[]"); }catch(e){ return []; } }
+function markClear(n){ const c=clears(); if(!c.includes(n)){ c.push(n); try{ localStorage.setItem(CLEARKEY, JSON.stringify(c)); }catch(e){} } }
+function startCh(gate){ const g=d6()+6, u=d6()+6; S={at:gate, waza:0, genki:Math.max(1,g-2), un:u, mw:0, mg:g, mu:u, items:["lantern"], cp:null}; rerolled=true; goTo(gate); }
 const app = document.getElementById("app");
 let S = null; // {at,waza,genki,un,mw,mg,mu,items,cp}
 let rerolled = false;
@@ -174,10 +177,11 @@ function badgesHtml(){ const f=found(); return '<div class="badges">'+BADGES.map
 function showTitle(){
   if(S) saveGame();
   const sv=loadGame();
+  if(sv&&sv.at){ if(sv.at>=200) markClear(1); if(sv.at>=400) markClear(2); }
   app.innerHTML = '<div class="title">'+((typeof TITLE_IMG!=="undefined"&&TITLE_IMG)?'<img class="cover" src="'+TITLE_IMG+'" alt="">':'<div class="candle">\ud83d\udd14</div>'+'<div class="ser">\u30e8\u30eb\u3068\u7070\u306e\u3046\u305f\u3000\u7b2c\u4e8c\u4f5c</div>'+'<h1>\u30e8\u30eb\u3068\u661f\u306e\u9418</h1>'+'<p class="sub">\u5317\u306e\u8c37\u3067\u3001\u3081\u3056\u307e\u3057\u306e\u9418\u304c\u308f\u308c\u305f\u3002<br>\u6751\u306f\u3001\u6751\u3054\u3068\u306d\u3080\u3063\u305f\u307e\u307e\u2014\u2014</p>')+
     '<button class="start" onclick="charGen()">\u25b6 \u306f\u3058\u3081\u304b\u3089</button>'+
     (sv && sv.at ? '<button class="cont" onclick="contGame()">\u3064\u3065\u304d\u304b\u3089\uff08'+CHNAMES[(SCENES[String(sv.at)]||{ch:1}).ch]+'\uff09</button>' : '')+
-    badgesHtml()+
+    (clears().includes(1)?'<button class="cont" style="margin-top:8px" onclick="startCh(200)">▶ 第二章から はじめる</button>':'')+(clears().includes(2)?'<button class="cont" style="margin-top:8px" onclick="startCh(400)">▶ 第三章から はじめる</button>':'')+badgesHtml()+
     '<p class="note">\u5168\u4e09\u7ae0\u30fb\u5168337\u5834\u9762\u30fb\u3068\u304a\u3057\u3067\u3042\u305d\u3079\u308b\uff0f\u30b2\u30fc\u30e0\u30d6\u30c3\u30af\u5f0f\uff08\u3052\u3093\u304d\u30fb\u3046\u3093\uff09</p></div>';
   window.scrollTo(0,0);
 }
@@ -202,7 +206,7 @@ function goTo(id, noFx){
   const s=SCENES[String(id)];
   if(!s){ showTitle(); return; }
   S.at=id; B=null;
-  if(s.gate){ S.genki=Math.max(S.genki, Math.max(1, S.mg-2)); }
+  if(s.gate){ S.genki=Math.max(S.genki, Math.max(1, S.mg-2)); if(id===200){ markClear(1); } if(id===400){ markClear(2); } }
   const parts=[];
   if(!noFx){ addItems(s.get, parts); applyFx(s.fx, parts); }
   if(S.genki<=0){ saveGame(); gameOver(); return; }
